@@ -43,8 +43,8 @@ const App = () => {
   }; 
 
   
-  const handleAddClick = () => {
-    const newRecord = {
+  const handleAddClick = () => {        // adiciona valores aleatorios aos campos do banco de dados 
+    const newRow = {
       exportador: `Exportador ${Math.floor(Math.random() * 100)}`,
       importador: `Importador ${Math.floor(Math.random() * 100)}`,
       dataEmbarque: new Date().toISOString(),
@@ -64,9 +64,9 @@ const App = () => {
       liberadoParaFaturamento: new Date().toISOString(),
     };
 
-    axios.post(`${process.env.REACT_APP_API_URL}/idata/recruitment`, newRecord, {
+    axios.post(`${process.env.REACT_APP_API_URL}/idata/recruitment`, newRow, {
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json',         
         'ngrok-skip-browser-warning': 'skip'
       }
     })
