@@ -3,7 +3,7 @@ import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
-import { TextField } from '@mui/material';
+import { TextField, Button } from '@mui/material';
 import { styled } from '@mui/system';
 
 
@@ -22,9 +22,12 @@ const App = () => {
   // Estado para armazenar os dados da tabela
   const [rowData, setRowData] = useState([]);
 
-  // Efeito para carregar os dados da API quando o componente é montado
   useEffect(() => {
-    axios.get('https://5523-2804-13d0-9935-bd01-a9b8-3461-adff-aeb0.ngrok-free.app/idata/recruitment', // Utilizando o link do servico que deixa minha API disponivel para ser acessada por outras maquinas
+    loadData();
+  }, []);
+  // Efeito para carregar os dados da API quando o componente é montado
+  const loadData = () => {
+    axios.get(`${process.env.REACT_APP_API_URL}/idata/recruitment`, // Utilizando o link do servico que deixa minha API disponivel para ser acessada atraves da internet
     {
       headers: {
         'ngrok-skip-browser-warning': 'skip'        // pula a pagina de instrucoes do servico
@@ -37,7 +40,43 @@ const App = () => {
     .catch(error => {
       console.error('Erro ao obter dados:', error);
     });
-  }, []);
+  }; 
+
+  
+  const handleAddClick = () => {
+    const newRecord = {
+      exportador: `Exportador ${Math.floor(Math.random() * 100)}`,
+      importador: `Importador ${Math.floor(Math.random() * 100)}`,
+      dataEmbarque: new Date().toISOString(),
+      previsaoDeEmbarque: new Date().toISOString(),
+      dataChegada: new Date().toISOString(),
+      previsaoDeChegada: new Date().toISOString(),
+      di: `${Math.floor(Math.random() * 1000000)}`,
+      navio: `Navio ${Math.floor(Math.random() * 10)}`,
+      master: `Master ${Math.floor(Math.random() * 10)}`,
+      house: `House ${Math.floor(Math.random() * 10)}`,
+      fatura: `Fatura ${Math.floor(Math.random() * 1000)}`,
+      freteModo: ["Aereo", "Maritimo"][Math.floor(Math.random() * 2)],
+      container: `Container ${Math.floor(Math.random() * 1000)}`,
+      canalParametrizacao: ["CanalA", "CanalB", "CanalC"][Math.floor(Math.random() * 3)],
+      origem: `Origem ${Math.floor(Math.random() * 5)}`,
+      destino: `Destino ${Math.floor(Math.random() * 5)}`,
+      liberadoParaFaturamento: new Date().toISOString(),
+    };
+
+    axios.post(`${process.env.REACT_APP_API_URL}/idata/recruitment`, newRecord, {
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'skip'
+      }
+    })
+    .then(() => {
+      loadData(); // Recarrega os dados para incluir o novo registro
+    })
+    .catch(error => {
+      console.error('Erro ao inserir dados:', error);
+    });
+  };
 
   // Definição das colunas da tabela
   const columnDefs = [
@@ -100,7 +139,7 @@ const App = () => {
         onChange={handleSearch}
 
       />
-
+      <Button variant="contained" onClick={handleAddClick} style={{ margin: "10px", }}>+</Button>
       <div className="ag-theme-alpine" style={{ height: '600px', width: '100%' }}>
         <AgGridReact
           rowData={rowData}
