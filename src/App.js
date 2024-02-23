@@ -5,7 +5,10 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { TextField, Button } from '@mui/material';
 import { styled } from '@mui/system';
-
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 
 // Estilizando o campo de pesquisa
 const SearchFilter = styled(TextField)({
@@ -13,6 +16,7 @@ const SearchFilter = styled(TextField)({
   marginBottom: '35px'
 
 });
+
 
 // Componente principal
 const App = () => {
@@ -22,61 +26,96 @@ const App = () => {
   // Estado para armazenar os dados da tabela
   const [rowData, setRowData] = useState([]);
 
+  const [open, setOpen] = useState(false);
+
+  const [formData, setFormData] = useState({
+    exportador: '',
+    importador: '',
+    dataEmbarque: '',
+    previsaoDeEmbarque: '',
+    dataChegada: '',
+    previsaoDeChegada: '',
+    DI: '',
+    navio: '',
+    master: '',
+    house: '',
+    fatura: '',
+    freteModo: '',
+    container: '',
+    canalParametrizacao: '',
+    origem: '',
+    destino: '',
+    liberadoParaFaturamento: '',
+  });
+
   useEffect(() => {
     loadData();
   }, []);
+
   // Efeito para carregar os dados da API quando o componente é montado
   const loadData = () => {
-    axios.get(`${process.env.REACT_APP_API_URL}/idata/recruitment`, // Utilizando o link do servico que deixa minha API disponivel para ser acessada atraves da internet
-    {
-      headers: {
-        'ngrok-skip-browser-warning': 'skip'        // pula a pagina de instrucoes do servico
-      }
-    })
-    .then(response => {
-      setOriginalData(response.data);
-      setRowData(response.data);
-    })
-    .catch(error => {
-      console.error('Erro ao obter dados:', error);
-    });
-  }; 
+    axios.get(`https://localhost:7033/idata/recruitment`, // Utilizando o link do servico que deixa minha API disponivel para ser acessada atraves da internet
+      {
+        headers: {
+          'ngrok-skip-browser-warning': 'skip'        // pula a pagina de instrucoes do servico
+        }
+      })
+      .then(response => {
+        setOriginalData(response.data);
+        setRowData(response.data);
+      })
+      .catch(error => {
+        console.error('Erro ao obter dados:', error);
+      });
 
-  
-  const handleAddClick = () => {        // adiciona valores aleatorios aos campos do banco de dados 
-    const newRow = {
-      exportador: `Exportador ${Math.floor(Math.random() * 100)}`,
-      importador: `Importador ${Math.floor(Math.random() * 100)}`,
-      dataEmbarque: new Date().toISOString(),
-      previsaoDeEmbarque: new Date().toISOString(),
-      dataChegada: new Date().toISOString(),
-      previsaoDeChegada: new Date().toISOString(),
-      di: `${Math.floor(Math.random() * 1000000)}`,
-      navio: `Navio ${Math.floor(Math.random() * 10)}`,
-      master: `Master ${Math.floor(Math.random() * 10)}`,
-      house: `House ${Math.floor(Math.random() * 10)}`,
-      fatura: `Fatura ${Math.floor(Math.random() * 1000)}`,
-      freteModo: ["Aereo", "Maritimo"][Math.floor(Math.random() * 2)],
-      container: `Container ${Math.floor(Math.random() * 1000)}`,
-      canalParametrizacao: ["CanalA", "CanalB", "CanalC"][Math.floor(Math.random() * 3)],
-      origem: `Origem ${Math.floor(Math.random() * 5)}`,
-      destino: `Destino ${Math.floor(Math.random() * 5)}`,
-      liberadoParaFaturamento: new Date().toISOString(),
-    };
 
-    axios.post(`${process.env.REACT_APP_API_URL}/idata/recruitment`, newRow, {
+  };
+
+  //funcao que abre o dialogo quando clicado no botao
+  const handleAddClick = () => {
+    handleOpen();
+  };
+  //funcao que abre o dialogo
+  const handleOpen = () => {
+    setOpen(true);
+  };
+  //funcao que fecha dialogo
+  const handleClose = () => {
+    setOpen(false);
+  };
+  //Atualiza o estado do formulario
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  //funcao para envio do formulario
+  const handleSubmit = () => {
+
+    const requiredFields = ['exportador', 'importador', 'DI', 'navio', 'master', 'house', 'fatura', 'freteModo', 'container', 'canalParametrizacao', 'origem', 'destino', 'liberadoParaFaturamento'];
+    const invalidFields = requiredFields.filter(field => !formData[field]);
+
+    if (invalidFields.length > 0) {
+      // Exibe um alerta se algum campo obrigatorio estiver em branco
+      window.alert(`Por favor, preencha todos os campos`);
+      return;
+    }
+    axios.post(`https://localhost:7033/idata/recruitment`, formData, {
       headers: {
-        'Content-Type': 'application/json',         
+        'Content-Type': 'application/json',
         'ngrok-skip-browser-warning': 'skip'
       }
     })
-    .then(() => {
-      loadData(); // Recarrega os dados para incluir o novo registro
-    })
-    .catch(error => {
-      console.error('Erro ao inserir dados:', error);
-    });
+      .then(() => {
+        loadData();
+        handleClose();
+      })
+      .catch(error => {
+        console.error('Erro ao inserir dados:', error);
+      });
   };
+
+
 
   // Definição das colunas da tabela
   const columnDefs = [
@@ -105,7 +144,7 @@ const App = () => {
     const date = new Date(params.value);
     return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
   };
-  // Função para filtrar os dados da tabela com base no texto de pesquisa
+  // Funcao para filtrar os dados da tabela com base no texto de pesquisa
   const handleSearch = (event) => {
     const searchText = event.target.value.toLowerCase();
     if (searchText === "") {
@@ -113,7 +152,7 @@ const App = () => {
       setRowData(originalData);
 
     } else {
-      // Caso contrario, aplicar a lógica de filtragem 
+      // Caso contrario, aplicar a logica de filtragem 
       const filteredData = originalData.filter(item =>
         Object.values(item).some(value =>
           value.toString().toLowerCase().includes(searchText)
@@ -122,6 +161,8 @@ const App = () => {
       setRowData(filteredData);
     }
   };
+
+
 
   // Renderização do componente
 
@@ -147,10 +188,30 @@ const App = () => {
           pagination={true}
         />
       </div>
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>Adicionar registro</DialogTitle>
+        <DialogContent>
+          {Object.keys(formData).map((key, index) => (
+            <TextField
+              key={index}
+              margin="dense"
+              id={key}
+              name={key}
+              label={key.charAt(0).toUpperCase() + key.slice(1)}
+              type={key === 'dataEmbarque' || key === 'previsaoDeEmbarque' || key === 'dataChegada' || key === 'previsaoDeChegada' || key === 'liberadoParaFaturamento' ? 'datetime-local' : 'text'}
+              fullWidth
+              value={formData[key]}
+              onChange={handleChange}
+            />
+          ))}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancelar</Button>
+          <Button onClick={handleSubmit} variant="contained">Enviar</Button>
+        </DialogActions>
+      </Dialog>
     </div>
-
   );
-
 };
 
 
