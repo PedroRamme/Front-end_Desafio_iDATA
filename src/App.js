@@ -14,11 +14,8 @@ import DialogActions from '@mui/material/DialogActions';
 const SearchFilter = styled(TextField)({
 
   marginBottom: '35px'
-
 });
 
-
-// Componente principal
 const App = () => {
   // Estado para armazenar os dados originais
   const [originalData, setOriginalData] = useState([]);
@@ -48,13 +45,22 @@ const App = () => {
     liberadoParaFaturamento: '',
   });
 
+  const [configJson, setConfigJson] = useState(null);
+
   useEffect(() => {
-    loadData();
+    fetch('/config.json')
+      .then((response) => response.json())
+      .then((config) => {
+
+        setConfigJson(config.API_URL);        // Armazene a configuração em um estado local
+
+        loadData(config.API_URL);             // Chame loadData apenas depois que configJson for definido
+      });
   }, []);
 
   // Efeito para carregar os dados da API quando o componente é montado
-  const loadData = () => {
-    axios.get(`https://localhost:7033/idata/recruitment`, // Utilizando o link do servico que deixa minha API disponivel para ser acessada atraves da internet
+  const loadData = (apiUrl) => {
+    axios.get(`${apiUrl}/idata/recruitment`, // Utilizando o link do servico que deixa minha API disponivel para ser acessada atraves da internet
       {
         headers: {
           'ngrok-skip-browser-warning': 'skip'        // pula a pagina de instrucoes do servico
@@ -75,14 +81,15 @@ const App = () => {
   const handleAddClick = () => {
     handleOpen();
   };
-  //funcao que abre o dialogo
+
   const handleOpen = () => {
     setOpen(true);
   };
-  //funcao que fecha dialogo
+
   const handleClose = () => {
     setOpen(false);
   };
+
   //Atualiza o estado do formulario
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -95,12 +102,21 @@ const App = () => {
     const requiredFields = ['exportador', 'importador', 'DI', 'navio', 'master', 'house', 'fatura', 'freteModo', 'container', 'canalParametrizacao', 'origem', 'destino', 'liberadoParaFaturamento'];
     const invalidFields = requiredFields.filter(field => !formData[field]);
 
+    //verificacoes de campos invalidos
+    if (new Date(formData.dataEmbarque) > new Date(formData.dataChegada)) {
+      window.alert('A data de embarque não pode ser maior do que a data de chegada');
+      return;
+    }
+    if (new Date(formData.previsaoDeEmbarque) > new Date(formData.previsaoDeChegada)) {
+      window.alert('A previsão de embarque não pode ser maior do que a previsão de chegada');
+      return;
+    }
     if (invalidFields.length > 0) {
-      // Exibe um alerta se algum campo obrigatorio estiver em branco
+
       window.alert(`Por favor, preencha todos os campos`);
       return;
     }
-    axios.post(`https://localhost:7033/idata/recruitment`, formData, {
+    axios.post(`${configJson}/idata/recruitment`, formData, {
       headers: {
         'Content-Type': 'application/json',
         'ngrok-skip-browser-warning': 'skip'
@@ -115,9 +131,6 @@ const App = () => {
       });
   };
 
-
-
-  // Definição das colunas da tabela
   const columnDefs = [
     { headerName: 'ID', field: 'id' },
     { headerName: 'Exportador', field: 'exportador' },
@@ -139,7 +152,7 @@ const App = () => {
     { headerName: 'LiberadoParaFaturamento', field: 'liberadoParaFaturamento', valueFormatter: params => formateDate(params) },
   ];
 
-  // formata a data e o horario
+  // Formata a data e o horario
   const formateDate = (params) => {
     const date = new Date(params.value);
     return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
@@ -148,11 +161,11 @@ const App = () => {
   const handleSearch = (event) => {
     const searchText = event.target.value.toLowerCase();
     if (searchText === "") {
-      // Se o campo de pesquisa estiver vazio, restaurar os dados originais
+
       setRowData(originalData);
 
     } else {
-      // Caso contrario, aplicar a logica de filtragem 
+      // aplica a logica de filtragem 
       const filteredData = originalData.filter(item =>
         Object.values(item).some(value =>
           value.toString().toLowerCase().includes(searchText)
@@ -161,8 +174,6 @@ const App = () => {
       setRowData(filteredData);
     }
   };
-
-
 
   // Renderização do componente
 
@@ -202,6 +213,7 @@ const App = () => {
               fullWidth
               value={formData[key]}
               onChange={handleChange}
+              InputLabelProps={key === 'dataEmbarque' || key === 'previsaoDeEmbarque' || key === 'dataChegada' || key === 'previsaoDeChegada' || key === 'liberadoParaFaturamento' ? { shrink: true } : {}}
             />
           ))}
         </DialogContent>
